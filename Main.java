@@ -122,6 +122,10 @@ class Tomasulo {
         System.out.println(FPAdders);
         System.out.println("============ FPAddersReservation ===========");
         System.out.println(FPAddersReservation);
+        System.out.println("============ FPMultipliers ===========");
+        System.out.println(FPMultipliers);
+        System.out.println("============ FPMultipliersReservation ===========");
+        System.out.println(FPMultipliersReservation);
         printRegisters();
     }
 
