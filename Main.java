@@ -22,12 +22,18 @@ class Tomasulo {
     int clock = 0;
 
     Map<String, Register> registers = new HashMap<>() {{
-        put("F0", new Register("F0", false));
+        put("F0", new Register("F0", false, (float) 1));
         put("F1", new Register("F1", false));
         put("F2", new Register("F2", false));
         put("F3", new Register("F3", false));
-        put("F4", new Register("F4", false, (float) 2));
-        put("F5", new Register("F5", false, (float) 3));
+        put("F4", new Register("F4", false));
+        put("F5", new Register("F5", false));
+        put("F6", new Register("F6", false));
+        put("F7", new Register("F7", false));
+        put("F8", new Register("F8", false));
+        put("F9", new Register("F9", false));
+        put("F10", new Register("F10", false));
+        put("F11", new Register("F11", false));
     }};
 
     public void execute() {
@@ -82,7 +88,6 @@ class Tomasulo {
                 instruction.setRdBusy(true);
             }
 
-
             // Check Reservation units, if regs are available, move instruction to ALU.
             List<Instruction> toRemoveAddReserv = new ArrayList<>();
             List<Instruction> toRemoveMulReserv = new ArrayList<>();
@@ -104,7 +109,7 @@ class Tomasulo {
                 FPMultipliersReservation.remove(toRemove);
             }
 
-           print();
+            print();
         }
     }
 
@@ -133,9 +138,16 @@ class Tomasulo {
     }
 
     private void populateInstructions() {
-        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F4"), registers.get("F5"), 4));
-        instructions.add(new Instruction("ADD", registers.get("F0"), registers.get("F1"), registers.get("F4"), 3));
-        instructions.add(new Instruction("ADD", registers.get("F3"), registers.get("F1"), registers.get("F1"), 1));
+//        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F4"), registers.get("F5"), 4));
+//        instructions.add(new Instruction("ADD", registers.get("F0"), registers.get("F1"), registers.get("F4"), 3));
+//        instructions.add(new Instruction("ADD", registers.get("F3"), registers.get("F1"), registers.get("F1"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F4"), registers.get("F5"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F10"), registers.get("F0"), registers.get("F0"), 2));
+        instructions.add(new Instruction("ADD", registers.get("F5"), registers.get("F1"), registers.get("F6"), 1));
+        instructions.add(new Instruction("MUL", registers.get("F7"), registers.get("F4"), registers.get("F8"), 2));
+        instructions.add(new Instruction("ADD", registers.get("F2"), registers.get("F7"), registers.get("F3"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F9"), registers.get("F4"), registers.get("F10"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F11"), registers.get("F4"), registers.get("F6"), 1));
     }
 }
 
@@ -163,6 +175,10 @@ class Instruction {
             rd.setValue(rs1.getValue() + rs2.getValue());
         } else if (op.equals("SUB")) {
             rd.setValue(rs1.getValue() - rs2.getValue());
+        } else if (op.equals("MUL")) {
+            rd.setValue(rs1.getValue() * rs2.getValue());
+        } else if (op.equals("DIV")) {
+            rd.setValue(rs1.getValue() / rs2.getValue());
         }
     }
 
@@ -239,4 +255,4 @@ class Register {
     public String toString() {
         return value == null ? name : value.toString();
     }
-} 
+}
