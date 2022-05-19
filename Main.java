@@ -22,10 +22,10 @@ class Tomasulo {
     int clock = 0;
 
     Map<String, Register> registers = new HashMap<>() {{
-        put("F0", new Register("F0", false, (float) 1));
+        put("F0", new Register("F0", false));
         put("F1", new Register("F1", false));
-        put("F2", new Register("F2", false));
-        put("F3", new Register("F3", false));
+        put("F2", new Register("F2", false, (float) 2));
+        put("F3", new Register("F3", false, (float) 3));
         put("F4", new Register("F4", false));
         put("F5", new Register("F5", false));
         put("F6", new Register("F6", false));
@@ -52,12 +52,15 @@ class Tomasulo {
                 if (instruction.getRemainingClock() == 0) {
                     instruction.execute();
                     instruction.setRdBusy(false);
-
-                    if (instruction.isAdd()) {
-                        toRemoveAdders.add(instruction);
-                    } else {
-                        toRemoveMultipliers.add(instruction);
-                    }
+                    toRemoveAdders.add(instruction);
+                }
+            }
+            for (Instruction instruction : FPMultipliers) {
+                instruction.decrementClock();
+                if (instruction.getRemainingClock() == 0) {
+                    instruction.execute();
+                    instruction.setRdBusy(false);
+                    toRemoveMultipliers.add(instruction);
                 }
             }
             for (Instruction toRemove : toRemoveAdders) {
@@ -92,16 +95,18 @@ class Tomasulo {
             List<Instruction> toRemoveAddReserv = new ArrayList<>();
             List<Instruction> toRemoveMulReserv = new ArrayList<>();
             for (Instruction instruction : FPAddersReservation) {
-               if (instruction.noneSrcRegsEmpty()) {
-                    if (instruction.isAdd()) {
-                        FPAdders.add(instruction);
-                        toRemoveAddReserv.add(instruction);
-                    } else {
-                        FPMultipliers.add(instruction);
-                        toRemoveMulReserv.add(instruction);
-                    }
+                if (instruction.noneSrcRegsEmpty()) {
+                    FPAdders.add(instruction);
+                    toRemoveAddReserv.add(instruction);
                 }
             }
+            for (Instruction instruction : FPMultipliersReservation) {
+               if (instruction.noneSrcRegsEmpty()) {
+                    FPMultipliers.add(instruction);
+                    toRemoveMulReserv.add(instruction);
+                }
+            }
+
             for (Instruction toRemove : toRemoveAddReserv) {
                 FPAddersReservation.remove(toRemove);
             }
@@ -132,26 +137,26 @@ class Tomasulo {
     private void printRegisters() {
         System.out.println(
             "F0: " + registers.get("F0") + 
-            " | F1: " + registers.get("F1") + 
-            " | F2: " + registers.get("F2") + 
-            " | F3: " + registers.get("F3") + 
-            " | F4: " + registers.get("F4") + 
-            " | F5: " + registers.get("F5")
+            " | F1: " + registers.get("F1") +
+            " | F2: " + registers.get("F2") +
+            " | F3: " + registers.get("F3") +
+            " | F4: " + registers.get("F4") +
+            " | F5: " + registers.get("F5") +
+            " | F6: " + registers.get("F6") +
+            " | F7: " + registers.get("F7") +
+            " | F8: " + registers.get("F8") +
+            " | F9: " + registers.get("F9") +
+            " | F10: " + registers.get("F10") +
+            " | F11: " + registers.get("F11")
         );
-
     }
 
     private void populateInstructions() {
-//        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F4"), registers.get("F5"), 4));
-//        instructions.add(new Instruction("ADD", registers.get("F0"), registers.get("F1"), registers.get("F4"), 3));
-//        instructions.add(new Instruction("ADD", registers.get("F3"), registers.get("F1"), registers.get("F1"), 1));
-        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F4"), registers.get("F5"), 1));
-        instructions.add(new Instruction("ADD", registers.get("F10"), registers.get("F0"), registers.get("F0"), 2));
-        instructions.add(new Instruction("ADD", registers.get("F5"), registers.get("F1"), registers.get("F6"), 1));
-        instructions.add(new Instruction("MUL", registers.get("F7"), registers.get("F4"), registers.get("F8"), 2));
-        instructions.add(new Instruction("ADD", registers.get("F2"), registers.get("F7"), registers.get("F3"), 1));
-        instructions.add(new Instruction("ADD", registers.get("F9"), registers.get("F4"), registers.get("F10"), 1));
-        instructions.add(new Instruction("ADD", registers.get("F11"), registers.get("F4"), registers.get("F6"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F2"), registers.get("F3"), 2));
+        instructions.add(new Instruction("MUL", registers.get("F4"), registers.get("F1"), registers.get("F2"), 1));
+        instructions.add(new Instruction("ADD", registers.get("F2"), registers.get("F1"), registers.get("F3"), 4));
+        instructions.add(new Instruction("ADD", registers.get("F5"), registers.get("F2"), registers.get("F4"), 1));
+
     }
 }
 
