@@ -14,10 +14,12 @@ public class Main {
 
 class Tomasulo {
     Queue<Instruction> instructions = new LinkedList<>();
-    Queue<Instruction> FPAddersReservation = new LinkedList<>();
-    Queue<Instruction> FPAdders = new LinkedList<>();
-    Queue<Instruction> FPMultipliersReservation = new LinkedList<>();
-    Queue<Instruction> FPMultipliers = new LinkedList<>();
+    Queue<RInstruction> FPAddersReservation = new LinkedList<>();
+    Queue<RInstruction> FPAdders = new LinkedList<>();
+    Queue<RInstruction> FPMultipliersReservation = new LinkedList<>();
+    Queue<RInstruction> FPMultipliers = new LinkedList<>();
+
+    Queue<LDInstruction> LDBuffers = new LinkedList();
 
     int clock = 0;
 
@@ -36,18 +38,20 @@ class Tomasulo {
         put("F11", new Register("F11", false));
     }};
 
+    private void print(String info) { System.out.println(info); }
+
     public void execute() {
-        populateInstructions();
+        populateRInstructions();
 
         while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
                     !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
-                        !FPMultipliersReservation.isEmpty()) {
+                        !FPMultipliersReservation.isEmpty() || !LDBuffers.isEmpty()) {
             clock++;
 
             // Check ALUs and execute operation if clock count is done
-            List<Instruction> toRemoveAdders = new ArrayList<>();
-            List<Instruction> toRemoveMultipliers = new ArrayList<>();
-            for (Instruction instruction : FPAdders) {
+            List<RInstruction> toRemoveAdders = new ArrayList<>();
+            List<RInstruction> toRemoveMultipliers = new ArrayList<>();
+            for (RInstruction instruction : FPAdders) {
                 instruction.decrementClock();
                 if (instruction.getRemainingClock() == 0) {
                     instruction.execute();
@@ -55,7 +59,7 @@ class Tomasulo {
                     toRemoveAdders.add(instruction);
                 }
             }
-            for (Instruction instruction : FPMultipliers) {
+            for (RInstruction instruction : FPMultipliers) {
                 instruction.decrementClock();
                 if (instruction.getRemainingClock() == 0) {
                     instruction.execute();
@@ -63,10 +67,10 @@ class Tomasulo {
                     toRemoveMultipliers.add(instruction);
                 }
             }
-            for (Instruction toRemove : toRemoveAdders) {
+            for (RInstruction toRemove : toRemoveAdders) {
                 FPAdders.remove(toRemove);
             }
-            for (Instruction toRemove : toRemoveMultipliers) {
+            for (RInstruction toRemove : toRemoveMultipliers) {
                 FPMultipliers.remove(toRemove);
             }
 
@@ -75,42 +79,46 @@ class Tomasulo {
             if (!instructions.isEmpty()) {
                 Instruction instruction = instructions.remove();
                 if (instruction.anySrcRegEmpty() || instruction.anyRegBusy()) {
-                    if (instruction.isAdd()) {
-                        FPAddersReservation.add(instruction);
-                    } else {
-                        FPMultipliersReservation.add(instruction);
-                    }
+                    if (instruction.getOp().equals("ADD") || instruction.getOp().equals("SUB")) {
+                        FPAddersReservation.add((RInstruction) instruction);
+                    } else if (instruction.getOp().equals("MUL") || instruction.getOp().equals("DIV")) {
+                        FPMultipliersReservation.add((RInstruction) instruction);
+                    } else if (instruction.getOp().equals("LOAD")) {
+                        LDBuffers.add((LDInstruction) instruction);
+		    }
                 } else {
-                    if (instruction.isAdd()) {
-                        FPAdders.add(instruction);
-                    } else {
-                        FPMultipliers.add(instruction);
-                    }
+                    if (instruction.getOp().equals("ADD") || instruction.getOp().equals("SUB")) {
+                        FPAdders.add((RInstruction) instruction);
+                    } else if (instruction.getOp().equals("MUL") || instruction.getOp().equals("DIV")) {
+                        FPMultipliers.add((RInstruction) instruction);
+                    } else if (instruction.getOp().equals("LOAD")) {
+			print("adding to NOTHING");
+		    }
                 }
 
                 instruction.setRdBusy(true);
             }
 
             // Check Reservation units, if regs are available, move instruction to ALU.
-            List<Instruction> toRemoveAddReserv = new ArrayList<>();
-            List<Instruction> toRemoveMulReserv = new ArrayList<>();
-            for (Instruction instruction : FPAddersReservation) {
+            List<RInstruction> toRemoveAddReserv = new ArrayList<>();
+            List<RInstruction> toRemoveMulReserv = new ArrayList<>();
+            for (RInstruction instruction : FPAddersReservation) {
                 if (instruction.noneSrcRegsEmpty()) {
                     FPAdders.add(instruction);
                     toRemoveAddReserv.add(instruction);
                 }
             }
-            for (Instruction instruction : FPMultipliersReservation) {
+            for (RInstruction instruction : FPMultipliersReservation) {
                if (instruction.noneSrcRegsEmpty()) {
                     FPMultipliers.add(instruction);
                     toRemoveMulReserv.add(instruction);
                 }
             }
 
-            for (Instruction toRemove : toRemoveAddReserv) {
+            for (RInstruction toRemove : toRemoveAddReserv) {
                 FPAddersReservation.remove(toRemove);
             }
-            for (Instruction toRemove : toRemoveMulReserv) {
+            for (RInstruction toRemove : toRemoveMulReserv) {
                 FPMultipliersReservation.remove(toRemove);
             }
 
@@ -131,6 +139,8 @@ class Tomasulo {
         System.out.println(FPMultipliers);
         System.out.println("============ FPMultipliersReservation ===========");
         System.out.println(FPMultipliersReservation);
+        System.out.println("============ LDBuffers ===========");
+        System.out.println(LDBuffers);
         printRegisters();
     }
 
@@ -151,23 +161,65 @@ class Tomasulo {
         );
     }
 
-    private void populateInstructions() {
-        instructions.add(new Instruction("ADD", registers.get("F1"), registers.get("F2"), registers.get("F3"), 2));
-        instructions.add(new Instruction("MUL", registers.get("F4"), registers.get("F1"), registers.get("F2"), 1));
-        instructions.add(new Instruction("ADD", registers.get("F2"), registers.get("F1"), registers.get("F3"), 4));
-        instructions.add(new Instruction("ADD", registers.get("F5"), registers.get("F2"), registers.get("F4"), 1));
-
+    private void populateRInstructions() {
+        instructions.add(new RInstruction("ADD", registers.get("F1"), registers.get("F2"), registers.get("F3"), 2));
+        instructions.add(new RInstruction("MUL", registers.get("F4"), registers.get("F1"), registers.get("F2"), 1));
+        instructions.add(new RInstruction("ADD", registers.get("F2"), registers.get("F1"), registers.get("F3"), 4));
+        instructions.add(new RInstruction("ADD", registers.get("F5"), registers.get("F2"), registers.get("F4"), 1));
+        instructions.add(new LDInstruction("LOAD", registers.get("F9"), registers.get("F8"), 1));
     }
 }
 
-class Instruction {
+interface Instruction {
+    public boolean anySrcRegEmpty();
+    public boolean anyRegBusy();
+    public boolean noneSrcRegsEmpty();
+    public String getOp();
+    public void setRdBusy(boolean value);
+}
+
+class LDInstruction implements Instruction {
     private String op;
+    private int remainingClock;
+    private Register rd;
+    private Register rs;
+
+    public LDInstruction(String op, Register rd, Register rs, int remainingClock) {
+        this.op = op;
+        this.rd = rd;
+        this.rs = rs;
+        this.remainingClock = remainingClock;
+    }
+
+    public String getOp() { return op; }
+
+    public void setRdBusy(boolean value) {}
+
+    public boolean anySrcRegEmpty() { 
+	return rs.isEmpty();
+    }
+
+    public boolean anyRegBusy() { 
+	return rs.isBusy() || rd.isBusy();
+    }
+
+    public boolean noneSrcRegsEmpty() { return true; }
+
+    @Override
+    public String toString() {
+        return "[ op = " + op + " | rd = " + rd +
+               " | rs = " + rs + " | clock = " + Integer.toString(remainingClock) + " ]";
+    }
+}
+
+class RInstruction implements Instruction {
+    private String op;
+    private int remainingClock;
     private Register rd;
     private Register rs1;
     private Register rs2;
-    private int remainingClock;
 
-    public Instruction(String op, Register rd, Register rs1, Register rs2, int remainingClock) {
+    public RInstruction(String op, Register rd, Register rs1, Register rs2, int remainingClock) {
         this.op = op;
         this.rd = rd;
         this.rs1 = rs1;
@@ -175,9 +227,7 @@ class Instruction {
         this.remainingClock = remainingClock;
     }
 
-    public boolean isAdd() {
-        return op == "ADD" || op == "SUB";
-    }
+    public String getOp() { return op; }
 
     public void execute() {
         if (op.equals("ADD")) {
@@ -222,7 +272,6 @@ class Instruction {
                rs2 + " | clock = " + Integer.toString(remainingClock) + " ]";
     }
 }
-
 
 class Register {
     private Float value;
