@@ -21,9 +21,9 @@ class Tomasulo {
     Queue<RInstruction> FPMultipliersReservation = new LinkedList<>();
     Queue<RInstruction> FPMultipliers = new LinkedList<>();
 
-    Queue<LDSTInstruction> LDBuffers = new LinkedList();
-    Queue<LDSTInstruction> STBuffers = new LinkedList();
-    Queue<LDSTInstruction> memoryUnit = new LinkedList();
+    Queue<LDSTInstruction> LDBuffer = new LinkedList<>();
+    Queue<LDSTInstruction> STBuffer = new LinkedList<>();
+    Queue<LDSTInstruction> memoryUnit = new LinkedList<>();
 
     int clock = 0;
 
@@ -47,8 +47,8 @@ class Tomasulo {
 
         while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
                 !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
-                !FPMultipliersReservation.isEmpty() || !LDBuffers.isEmpty() ||
-                !STBuffers.isEmpty() || !memoryUnit.isEmpty()) {
+                !FPMultipliersReservation.isEmpty() || !LDBuffer.isEmpty() ||
+                !STBuffer.isEmpty() || !memoryUnit.isEmpty()) {
             clock++;
 
             // Check ALUs and execute operation if clock count is done
@@ -101,9 +101,9 @@ class Tomasulo {
                     } else if (instruction.getOp().equals("MUL") || instruction.getOp().equals("DIV")) {
                         FPMultipliersReservation.add((RInstruction) instruction);
                     } else if (instruction.getOp().equals("LOAD")) {
-                        LDBuffers.add((LDSTInstruction) instruction);
+                        LDBuffer.add((LDSTInstruction) instruction);
                     } else if (instruction.getOp().equals("STORE")) {
-                        STBuffers.add((LDSTInstruction) instruction);
+                        STBuffer.add((LDSTInstruction) instruction);
                     }
                 } else {
                     if (instruction.getOp().equals("ADD") || instruction.getOp().equals("SUB")) {
@@ -121,8 +121,8 @@ class Tomasulo {
             // Check Reservation units, if regs are available, move instruction to ALU.
             List<RInstruction> toRemoveAddReserv = new ArrayList<>();
             List<RInstruction> toRemoveMulReserv = new ArrayList<>();
-            List<LDSTInstruction> toRemoveLDBuffers = new ArrayList<>();
-            List<LDSTInstruction> toRemoveSTBuffers = new ArrayList<>();
+            List<LDSTInstruction> toRemoveLDBuffer = new ArrayList<>();
+            List<LDSTInstruction> toRemoveSTBuffer = new ArrayList<>();
             for (RInstruction instruction : FPAddersReservation) {
                 if (instruction.noneSrcRegsEmpty()) {
                     FPAdders.add(instruction);
@@ -135,16 +135,16 @@ class Tomasulo {
                     toRemoveMulReserv.add(instruction);
                 }
             }
-            for (LDSTInstruction instruction : LDBuffers) {
+            for (LDSTInstruction instruction : LDBuffer) {
                 if (instruction.noneSrcRegsEmpty()) {
                     memoryUnit.add(instruction);
-                    toRemoveLDBuffers.add(instruction);
+                    toRemoveLDBuffer.add(instruction);
                 }
             }
-            for (LDSTInstruction instruction : STBuffers) {
+            for (LDSTInstruction instruction : STBuffer) {
                 if (instruction.noneSrcRegsEmpty()) {
                     memoryUnit.add(instruction);
-                    toRemoveSTBuffers.add(instruction);
+                    toRemoveSTBuffer.add(instruction);
                 }
             }
 
@@ -154,11 +154,11 @@ class Tomasulo {
             for (RInstruction toRemove : toRemoveMulReserv) {
                 FPMultipliersReservation.remove(toRemove);
             }
-            for (LDSTInstruction toRemove : toRemoveLDBuffers) {
-                LDBuffers.remove(toRemove);
+            for (LDSTInstruction toRemove : toRemoveLDBuffer) {
+                LDBuffer.remove(toRemove);
             }
-            for (LDSTInstruction toRemove : toRemoveSTBuffers) {
-                STBuffers.remove(toRemove);
+            for (LDSTInstruction toRemove : toRemoveSTBuffer) {
+                STBuffer.remove(toRemove);
             }
 
             print();
@@ -178,8 +178,10 @@ class Tomasulo {
         System.out.println(FPMultipliers);
         System.out.println("============ FPMultipliersReservation ===========");
         System.out.println(FPMultipliersReservation);
-        System.out.println("============ LDBuffers ===========");
-        System.out.println(LDBuffers);
+        System.out.println("============ LDBuffer ===========");
+        System.out.println(LDBuffer);
+        System.out.println("============ STBuffer ===========");
+        System.out.println(STBuffer);
         System.out.println("============ MemoryUnit ===========");
         System.out.println(memoryUnit);
         printRegisters();
