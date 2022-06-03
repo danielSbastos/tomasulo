@@ -61,6 +61,21 @@ class Tomasulo {
         }
     }
 
+    private <T> void moveToExecutionUnit(Queue<T> buffer, Queue<T> executionUnit) { 
+        List<Instruction> toRemove = new ArrayList<>();
+
+        for (T instruction : buffer) {
+            if (((Instruction) instruction).noneSrcRegsEmpty()) {
+                executionUnit.add(instruction);
+                toRemove.add(((Instruction) instruction));
+            }
+        }
+
+        for (Instruction _toRemove : toRemove) {
+            buffer.remove(_toRemove);
+        }
+    }
+
     public void execute() {
         populateInstructions();
 
@@ -74,9 +89,6 @@ class Tomasulo {
             executeAndRemove(FPMultipliers);
             executeAndRemove(memoryUnit);
 
-            // Dequeue instructions one by one. If the registers are available, add
-            // instruction
-            // to ALU, if not, add to the Reservation unit
             if (!instructions.isEmpty()) {
                 Instruction instruction = instructions.remove();
                 if (instruction.anySrcRegEmpty() || instruction.anyRegBusy()) {
@@ -102,48 +114,10 @@ class Tomasulo {
                 instruction.setRdBusy(true);
             }
 
-            // Check Reservation units, if regs are available, move instruction to ALU.
-            List<RInstruction> toRemoveAddReserv = new ArrayList<>();
-            List<RInstruction> toRemoveMulReserv = new ArrayList<>();
-            List<LDSTInstruction> toRemoveLDBuffer = new ArrayList<>();
-            List<LDSTInstruction> toRemoveSTBuffer = new ArrayList<>();
-            for (RInstruction instruction : FPAddersReservation) {
-                if (instruction.noneSrcRegsEmpty()) {
-                    FPAdders.add(instruction);
-                    toRemoveAddReserv.add(instruction);
-                }
-            }
-            for (RInstruction instruction : FPMultipliersReservation) {
-                if (instruction.noneSrcRegsEmpty()) {
-                    FPMultipliers.add(instruction);
-                    toRemoveMulReserv.add(instruction);
-                }
-            }
-            for (LDSTInstruction instruction : LDBuffer) {
-                if (instruction.noneSrcRegsEmpty()) {
-                    memoryUnit.add(instruction);
-                    toRemoveLDBuffer.add(instruction);
-                }
-            }
-            for (LDSTInstruction instruction : STBuffer) {
-                if (instruction.noneSrcRegsEmpty()) {
-                    memoryUnit.add(instruction);
-                    toRemoveSTBuffer.add(instruction);
-                }
-            }
-
-            for (RInstruction toRemove : toRemoveAddReserv) {
-                FPAddersReservation.remove(toRemove);
-            }
-            for (RInstruction toRemove : toRemoveMulReserv) {
-                FPMultipliersReservation.remove(toRemove);
-            }
-            for (LDSTInstruction toRemove : toRemoveLDBuffer) {
-                LDBuffer.remove(toRemove);
-            }
-            for (LDSTInstruction toRemove : toRemoveSTBuffer) {
-                STBuffer.remove(toRemove);
-            }
+            moveToExecutionUnit(FPAddersReservation, FPAdders);
+            moveToExecutionUnit(FPMultipliersReservation, FPMultipliers);
+            moveToExecutionUnit(LDBuffer, memoryUnit);
+            moveToExecutionUnit(STBuffer, memoryUnit);
 
             print();
         }
