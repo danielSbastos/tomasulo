@@ -189,12 +189,12 @@ class Tomasulo {
     }
 
     private void populateInstructions() {
-        instructions.add(new RInstruction("ADD", registers.get("F1"), registers.get("F2"), registers.get("F3"), 2));
-        instructions.add(new RInstruction("MUL", registers.get("F4"), registers.get("F1"), registers.get("F2"), 1));
-        instructions.add(new RInstruction("ADD", registers.get("F2"), registers.get("F1"), registers.get("F3"), 4));
-        instructions.add(new RInstruction("ADD", registers.get("F5"), registers.get("F2"), registers.get("F4"), 1));
-        instructions.add(new LDSTInstruction("LOAD", registers.get("F9"), registers.get("F5"), 1));
-        instructions.add(new LDSTInstruction("STORE", registers.get("F9"), registers.get("F0"), 1));
+        instructions.add(new RInstruction(InstructionBase.ADD, registers.get("F1"), registers.get("F2"), registers.get("F3")));
+        instructions.add(new RInstruction(InstructionBase.MUL, registers.get("F4"), registers.get("F1"), registers.get("F2")));
+        instructions.add(new RInstruction(InstructionBase.ADD, registers.get("F2"), registers.get("F1"), registers.get("F3")));
+        instructions.add(new RInstruction(InstructionBase.ADD, registers.get("F5"), registers.get("F2"), registers.get("F4")));
+        instructions.add(new LDSTInstruction(InstructionBase.LOAD, registers.get("F9"), registers.get("F5")));
+        instructions.add(new LDSTInstruction(InstructionBase.STORE, registers.get("F9"), registers.get("F0")));
     }
 }
 
@@ -209,21 +209,40 @@ interface Instruction {
     public void execute();
 }
 
-class InstructionC {
-    String op;
-    int remainingClock;
-    Register rd;
-    Map<String, Consumer<Register[]>> operations = new HashMap<>(){{
-        put("ADD", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() + rgs[2].getValue()));
-        put("SUB", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() - rgs[2].getValue()));
-        put("MUL", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() * rgs[2].getValue()));
-        put("DIV", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() / rgs[2].getValue()));
+class InstructionBase {
+    final static String ADD = "ADD";
+    final static String SUB = "SUB";
+    final static String DIV = "DIV";
+    final static String MUL = "MUL";
+    final static String STORE = "STORE";
+    final static String LOAD = "LOAD";
+
+    final HashMap<String, Integer> clockPerInstruction = new HashMap<>(){{
+        put(ADD, 1);
+        put(SUB, 1);
+        put(MUL, 1);
+        put(DIV, 1);
+        put(STORE, 1);
+        put(LOAD, 1);
     }};
 
-    public InstructionC(String op, Register rd, int remainingClock) {
+    public String op;
+    public int remainingClock;
+    public Register rd;
+
+    Map<String, Consumer<Register[]>> operations = new HashMap<>(){{
+        put(ADD, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() + rgs[2].getValue()));
+        put(SUB, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() - rgs[2].getValue()));
+        put(MUL, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() * rgs[2].getValue()));
+        put(DIV, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() / rgs[2].getValue()));
+        put(LOAD, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue()));
+        put(STORE, (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue()));
+    }};
+
+    public InstructionBase(String op, Register rd) {
         this.op = op;
         this.rd = rd;
-        this.remainingClock = remainingClock;
+        this.remainingClock = clockPerInstruction.get(op);
     }
 
     public String getOp() { return op; }
@@ -241,13 +260,14 @@ class InstructionC {
     }
 }
 
-class LDSTInstruction extends InstructionC implements Instruction {
+
+class LDSTInstruction extends InstructionBase implements Instruction {
     private Register rs;
 
-    public LDSTInstruction(String op, Register rd, Register rs, int remainingClock) {
-        super(op, rd, remainingClock);
+    public LDSTInstruction(String op, Register rd, Register rs) {
+        super(op, rd);
 
-        if (op.equals("STORE")) {
+        if (op.equals(InstructionBase.STORE)) {
             super.rd = rs;
             this.rs = rd;
         }  else {
@@ -256,7 +276,7 @@ class LDSTInstruction extends InstructionC implements Instruction {
     }
 
     public void execute() {
-	    super.rd.setValue(rs.getValue());
+        super.operations.get(super.op).accept(new Register[]{ rd, rs });
     }
 
     public boolean anySrcRegEmpty() { 
@@ -278,12 +298,12 @@ class LDSTInstruction extends InstructionC implements Instruction {
     }
 }
 
-class RInstruction extends InstructionC implements Instruction {
+class RInstruction extends InstructionBase implements Instruction {
     private Register rs1;
     private Register rs2;
     
-    public RInstruction(String op, Register rd, Register rs1, Register rs2, int remainingClock) {
-        super(op, rd, remainingClock);
+    public RInstruction(String op, Register rd, Register rs1, Register rs2) {
+        super(op, rd);
         this.rs1 = rs1;
         this.rs2 = rs2;
     }
