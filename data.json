@@ -1,0 +1,76 @@
+{
+    "instructions":[
+       "ADD F1 F2 F3",
+       "MUL F4 F1 F2",
+       "ADD F2 F1 F3",
+       "ADD F5 F2 F4",
+       "LOAD F9 F5",
+       "STORE F9 F0"
+    ],
+    "registers":[
+       {
+          "name":"F0"
+       },
+       {
+          "name":"F1"
+       },
+       {
+          "name":"F2",
+          "value":2
+       },
+       {
+          "name":"F3",
+          "value":3
+       },
+       {
+          "name":"F4"
+       },
+       {
+          "name":"F5"
+       },
+       {
+          "name":"F6"
+       },
+       {
+          "name":"F7"
+       },
+       {
+          "name":"F8"
+       },
+       {
+          "name":"F9"
+       },
+       {
+          "name":"F10"
+       },
+       {
+          "name":"F11"
+       }
+    ],
+    "clocksPerOperation":[
+       {
+          "op":"ADD",
+          "value":1
+       },
+       {
+          "op":"SUB",
+          "value":1
+       },
+       {
+          "op":"DIV",
+          "value":3
+       },
+       {
+          "op":"MUL",
+          "value":3
+       },
+       {
+          "op":"STORE",
+          "value":4
+       },
+       {
+          "op":"LOAD",
+          "value":2
+       }
+    ]
+ }

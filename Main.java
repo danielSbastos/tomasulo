@@ -12,11 +12,8 @@ public class Main {
     }
 }
 
-
 class Tomasulo {
     int clock = 0;
-
-    Queue<IInstruction> instructions = new LinkedList<>();
 
     Queue<RInstruction> FPAddersReservation = new LinkedList<>();
     Queue<RInstruction> FPAdders = new LinkedList<>();
@@ -55,25 +52,10 @@ class Tomasulo {
         }});
     }};
 
-    Map<String, Register> registers = new HashMap<>() {{
-        put("F0", new Register("F0", false));
-        put("F1", new Register("F1", false));
-        put("F2", new Register("F2", false, (float) 2));
-        put("F3", new Register("F3", false, (float) 3));
-        put("F4", new Register("F4", false));
-        put("F5", new Register("F5", false));
-        put("F6", new Register("F6", false));
-        put("F7", new Register("F7", false));
-        put("F8", new Register("F8", false));
-        put("F9", new Register("F9", false));
-        put("F10", new Register("F10", false));
-        put("F11", new Register("F11", false));
-    }};
-
     public void execute() {
-        populateInstructions();
+        Data.loadFile();
 
-        while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
+        while (!Data.instructions.isEmpty() || !FPAdders.isEmpty() ||
                 !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
                 !FPMultipliersReservation.isEmpty() || !LDBuffer.isEmpty() ||
                 !STBuffer.isEmpty() || !memoryUnit.isEmpty()) {
@@ -85,7 +67,7 @@ class Tomasulo {
             executeInstruction(FPMultipliers);
             executeInstruction(memoryUnit);
 
-            if (!instructions.isEmpty()) popAndMoveInstruction();
+            if (!Data.instructions.isEmpty()) popAndMoveInstruction();
 
             moveInstructionToExecutionUnit(FPAddersReservation, FPAdders);
             moveInstructionToExecutionUnit(FPMultipliersReservation, FPMultipliers);
@@ -130,7 +112,7 @@ class Tomasulo {
     }
 
     private void popAndMoveInstruction() {
-        IInstruction instruction = instructions.remove();
+        IInstruction instruction = Data.instructions.remove();
         System.out.println("Dequeued instruction: " + instruction);
         boolean toBuffer = instruction.anySrcRegEmpty() || instruction.anyRegBusy();
 
@@ -138,16 +120,6 @@ class Tomasulo {
         queueSrc.add(instruction);
         instruction.setRdBusy(true);
     }
-
-    private void populateInstructions() {
-        instructions.add(new RInstruction(Instruction.ADD, registers.get("F1"), registers.get("F2"), registers.get("F3")));
-        instructions.add(new RInstruction(Instruction.MUL, registers.get("F4"), registers.get("F1"), registers.get("F2")));
-        instructions.add(new RInstruction(Instruction.ADD, registers.get("F2"), registers.get("F1"), registers.get("F3")));
-        instructions.add(new RInstruction(Instruction.ADD, registers.get("F5"), registers.get("F2"), registers.get("F4")));
-        instructions.add(new LDSTInstruction(Instruction.LOAD, registers.get("F9"), registers.get("F5")));
-        instructions.add(new LDSTInstruction(Instruction.STORE, registers.get("F9"), registers.get("F0")));
-    }
-
 
     private void printBefore() {
         System.out.println("\n==================================================================");
@@ -157,7 +129,7 @@ class Tomasulo {
 
     private void printAfter() {
         System.out.println("============ Instructions ===========");
-        System.out.println(instructions);
+        System.out.println(Data.instructions);
         System.out.println("============ FPAdders ===========");
         System.out.println(FPAdders);
         System.out.println("============ FPAddersReservation ===========");
@@ -178,18 +150,18 @@ class Tomasulo {
 
     private void printRegisters(String str) {
         System.out.println(
-            "Registers " + str + ": F0: " + registers.get("F0") + 
-            " | F1: " + registers.get("F1") +
-            " | F2: " + registers.get("F2") +
-            " | F3: " + registers.get("F3") +
-            " | F4: " + registers.get("F4") +
-            " | F5: " + registers.get("F5") +
-            " | F6: " + registers.get("F6") +
-            " | F7: " + registers.get("F7") +
-            " | F8: " + registers.get("F8") +
-            " | F9: " + registers.get("F9") +
-            " | F10: " + registers.get("F10") +
-            " | F11: " + registers.get("F11")
+            "Registers " + str + ": F0: " + Data.registers.get("F0") + 
+            " | F1: " + Data.registers.get("F1") +
+            " | F2: " + Data.registers.get("F2") +
+            " | F3: " + Data.registers.get("F3") +
+            " | F4: " + Data.registers.get("F4") +
+            " | F5: " + Data.registers.get("F5") +
+            " | F6: " + Data.registers.get("F6") +
+            " | F7: " + Data.registers.get("F7") +
+            " | F8: " + Data.registers.get("F8") +
+            " | F9: " + Data.registers.get("F9") +
+            " | F10: " + Data.registers.get("F10") +
+            " | F11: " + Data.registers.get("F11")
         );
     }
 }

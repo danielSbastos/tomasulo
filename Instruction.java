@@ -10,15 +10,6 @@ public class Instruction {
     final static String STORE = "STORE";
     final static String LOAD = "LOAD";
 
-    final HashMap<String, Integer> clockPerInstruction = new HashMap<>(){{
-        put(ADD, 1);
-        put(SUB, 1);
-        put(MUL, 3);
-        put(DIV, 3);
-        put(STORE, 4);
-        put(LOAD, 2);
-    }};
-
     public String op;
     public int remainingClock;
     public Register rd;
@@ -35,7 +26,7 @@ public class Instruction {
     public Instruction(String op, Register rd) {
         this.op = op;
         this.rd = rd;
-        this.remainingClock = clockPerInstruction.get(op);
+        this.remainingClock = Data.clockPerInstruction.get(op);
     }
 
     public String getOp() { return op; }

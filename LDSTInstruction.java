@@ -34,5 +34,3 @@ public class LDSTInstruction extends Instruction implements IInstruction {
                " | rs = " + rs + " | clock = " + Integer.toString(super.remainingClock) + " ]";
     }
 }
-
-
