@@ -4,6 +4,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.Consumer;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,6 +12,7 @@ public class Main {
         t.execute();
     }
 }
+
 
 class Tomasulo {
     Queue<Instruction> instructions = new LinkedList<>();
@@ -207,45 +209,27 @@ interface Instruction {
     public void execute();
 }
 
-class LDSTInstruction implements Instruction {
-    private String op;
-    private int remainingClock;
-    private Register rd;
-    private Register rs;
+class InstructionC {
+    String op;
+    int remainingClock;
+    Register rd;
+    Map<String, Consumer<Register[]>> operations = new HashMap<>(){{
+        put("ADD", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() + rgs[2].getValue()));
+        put("SUB", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() - rgs[2].getValue()));
+        put("MUL", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() * rgs[2].getValue()));
+        put("DIV", (Register[] rgs) -> rgs[0].setValue(rgs[1].getValue() / rgs[2].getValue()));
+    }};
 
-    public LDSTInstruction(String op, Register rd, Register rs, int remainingClock) {
+    public InstructionC(String op, Register rd, int remainingClock) {
         this.op = op;
-
-        if (op.equals("LOAD")) {
-            this.rd = rd;
-            this.rs = rs;
-        } else if (op.equals("STORE")) {
-            this.rd = rs;
-            this.rs = rd;
-        }
-
+        this.rd = rd;
         this.remainingClock = remainingClock;
-    }
-
-    public void execute() {
-        System.out.println("==================== " + op);
-	    rd.setValue(rs.getValue());
     }
 
     public String getOp() { return op; }
 
-    public void setRdBusy(boolean value) {}
-
-    public boolean anySrcRegEmpty() { 
-        return rs.isEmpty();
-    }
-
-    public boolean anyRegBusy() { 
-	    return rs.isBusy() || rd.isBusy();
-    }
-
-    public boolean noneSrcRegsEmpty() { 
-        return !rs.isEmpty();
+    public void setRdBusy(boolean value) {
+        rd.setBusy(value);
     }
 
     public void decrementClock() {
@@ -255,45 +239,61 @@ class LDSTInstruction implements Instruction {
     public int getRemainingClock() {
         return remainingClock;
     }
-
-    @Override
-    public String toString() {
-        return "[ op = " + op + " | rd = " + rd +
-               " | rs = " + rs + " | clock = " + Integer.toString(remainingClock) + " ]";
-    }
 }
 
-class RInstruction implements Instruction {
-    private String op;
-    private int remainingClock;
-    private Register rd;
-    private Register rs1;
-    private Register rs2;
+class LDSTInstruction extends InstructionC implements Instruction {
+    private Register rs;
 
-    public RInstruction(String op, Register rd, Register rs1, Register rs2, int remainingClock) {
-        this.op = op;
-        this.rd = rd;
-        this.rs1 = rs1;
-        this.rs2 = rs2;
-        this.remainingClock = remainingClock;
-    }
+    public LDSTInstruction(String op, Register rd, Register rs, int remainingClock) {
+        super(op, rd, remainingClock);
 
-    public String getOp() { return op; }
-
-    public void execute() {
-        if (op.equals("ADD")) {
-            rd.setValue(rs1.getValue() + rs2.getValue());
-        } else if (op.equals("SUB")) {
-            rd.setValue(rs1.getValue() - rs2.getValue());
-        } else if (op.equals("MUL")) {
-            rd.setValue(rs1.getValue() * rs2.getValue());
-        } else if (op.equals("DIV")) {
-            rd.setValue(rs1.getValue() / rs2.getValue());
+        if (op.equals("STORE")) {
+            super.rd = rs;
+            this.rs = rd;
+        }  else {
+            this.rs = rs;
         }
     }
 
+    public void execute() {
+	    super.rd.setValue(rs.getValue());
+    }
+
+    public boolean anySrcRegEmpty() { 
+        return rs.isEmpty();
+    }
+
+    public boolean anyRegBusy() { 
+	    return rs.isBusy() || super.rd.isBusy();
+    }
+
+    public boolean noneSrcRegsEmpty() { 
+        return !rs.isEmpty();
+    }
+
+    @Override
+    public String toString() {
+        return "[ op = " + super.op + " | rd = " + super.rd +
+               " | rs = " + rs + " | clock = " + Integer.toString(super.remainingClock) + " ]";
+    }
+}
+
+class RInstruction extends InstructionC implements Instruction {
+    private Register rs1;
+    private Register rs2;
+    
+    public RInstruction(String op, Register rd, Register rs1, Register rs2, int remainingClock) {
+        super(op, rd, remainingClock);
+        this.rs1 = rs1;
+        this.rs2 = rs2;
+    }
+
+    public void execute() {
+        super.operations.get(super.op).accept(new Register[]{ rd, rs1, rs2 });
+    }
+
     public boolean anyRegBusy() {
-        return rd.isBusy() || rs1.isBusy() || rs2.isBusy();
+        return super.rd.isBusy() || this.rs1.isBusy() || this.rs2.isBusy();
     }
 
     public boolean noneSrcRegsEmpty() {
@@ -304,23 +304,11 @@ class RInstruction implements Instruction {
         return rs1.isEmpty() || rs2.isEmpty();
     }
 
-    public void setRdBusy(boolean status) {
-        this.rd.setBusy(status);
-    }
-
-    public void decrementClock() {
-        remainingClock--;
-    }
-
-    public int getRemainingClock() {
-        return remainingClock;
-    }
-
     @Override
     public String toString() {
-        return "[ op = " + op + " | rd = " + rd +
+        return "[ op = " + super.op + " | rd = " + super.rd +
                " | rs1 = " + rs1 + " | rs2 = " +
-               rs2 + " | clock = " + Integer.toString(remainingClock) + " ]";
+               rs2 + " | clock = " + Integer.toString(super.remainingClock) + " ]";
     }
 }
 
