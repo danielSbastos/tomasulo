@@ -42,8 +42,25 @@ class Tomasulo {
         put("F11", new Register("F11", false));
     }};
 
+    private <T> void executeAndRemove(Queue<T> queue) {
+        List<Instruction> toRemove = new ArrayList<>();
+
+        for (T instruction : queue) {
+            ((Instruction) instruction).decrementClock();
+            if (((Instruction) instruction).getRemainingClock() == 0) {
+                ((Instruction) instruction).execute();
+                ((Instruction) instruction).setRdBusy(false);
+                toRemove.add(((Instruction) instruction));
+            }
+        }
+
+        for (Instruction _toRemove : toRemove) {
+            queue.remove(_toRemove);
+        }
+    }
+
     public void execute() {
-        populateRInstructions();
+        populateInstructions();
 
         while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
                 !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
@@ -51,44 +68,9 @@ class Tomasulo {
                 !STBuffer.isEmpty() || !memoryUnit.isEmpty()) {
             clock++;
 
-            // Check ALUs and execute operation if clock count is done
-            List<RInstruction> toRemoveAdders = new ArrayList<>();
-            List<RInstruction> toRemoveMultipliers = new ArrayList<>();
-            List<LDSTInstruction> toRemoveMemoryUnit = new ArrayList<>();
-
-            for (RInstruction instruction : FPAdders) {
-                instruction.decrementClock();
-                if (instruction.getRemainingClock() == 0) {
-                    instruction.execute();
-                    instruction.setRdBusy(false);
-                    toRemoveAdders.add(instruction);
-                }
-            }
-            for (RInstruction instruction : FPMultipliers) {
-                instruction.decrementClock();
-                if (instruction.getRemainingClock() == 0) {
-                    instruction.execute();
-                    instruction.setRdBusy(false);
-                    toRemoveMultipliers.add(instruction);
-                }
-            }
-            for (LDSTInstruction instruction : memoryUnit) {
-                instruction.decrementClock();
-                if (instruction.getRemainingClock() == 0) {
-                    instruction.execute();
-                    instruction.setRdBusy(false);
-                    toRemoveMemoryUnit.add(instruction);
-                }
-            }
-            for (RInstruction toRemove : toRemoveAdders) {
-                FPAdders.remove(toRemove);
-            }
-            for (RInstruction toRemove : toRemoveMultipliers) {
-                FPMultipliers.remove(toRemove);
-            }
-            for (LDSTInstruction toRemove : toRemoveMemoryUnit) {
-                memoryUnit.remove(toRemove);
-            }
+            executeAndRemove(FPAdders);
+            executeAndRemove(FPMultipliers);
+            executeAndRemove(memoryUnit);
 
             // Dequeue instructions one by one. If the registers are available, add
             // instruction
@@ -204,7 +186,7 @@ class Tomasulo {
         );
     }
 
-    private void populateRInstructions() {
+    private void populateInstructions() {
         instructions.add(new RInstruction("ADD", registers.get("F1"), registers.get("F2"), registers.get("F3"), 2));
         instructions.add(new RInstruction("MUL", registers.get("F4"), registers.get("F1"), registers.get("F2"), 1));
         instructions.add(new RInstruction("ADD", registers.get("F2"), registers.get("F1"), registers.get("F3"), 4));
