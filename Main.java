@@ -15,6 +15,8 @@ public class Main {
 
 
 class Tomasulo {
+    int clock = 0;
+
     Queue<Instruction> instructions = new LinkedList<>();
 
     Queue<RInstruction> FPAddersReservation = new LinkedList<>();
@@ -27,7 +29,32 @@ class Tomasulo {
     Queue<LDSTInstruction> STBuffer = new LinkedList<>();
     Queue<LDSTInstruction> memoryUnit = new LinkedList<>();
 
-    int clock = 0;
+    Map<String, Map<Boolean, Queue>> locateInstruction = new HashMap<>(){{
+        put(InstructionBase.ADD, new HashMap<Boolean, Queue>(){{
+            put(true, FPAddersReservation);
+            put(false, FPAdders);
+        }});
+        put(InstructionBase.SUB, new HashMap<Boolean, Queue>(){{
+            put(true, FPAddersReservation);
+            put(false, FPAdders);
+        }});
+        put(InstructionBase.MUL, new HashMap<Boolean, Queue>(){{
+            put(true, FPMultipliersReservation);
+            put(false, FPMultipliers);
+        }});
+        put(InstructionBase.DIV, new HashMap<Boolean, Queue>(){{
+            put(true, FPMultipliersReservation);
+            put(false, FPMultipliers);
+        }});
+        put(InstructionBase.LOAD, new HashMap<Boolean, Queue>(){{
+            put(true, LDBuffer);
+            put(false, memoryUnit);
+        }});
+        put(InstructionBase.STORE, new HashMap<Boolean, Queue>(){{
+            put(true, STBuffer);
+            put(false, memoryUnit);
+        }});
+    }};
 
     Map<String, Register> registers = new HashMap<>() {{
         put("F0", new Register("F0", false));
@@ -44,7 +71,31 @@ class Tomasulo {
         put("F11", new Register("F11", false));
     }};
 
-    private <T> void executeAndRemove(Queue<T> queue) {
+    public void execute() {
+        populateInstructions();
+
+        while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
+                !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
+                !FPMultipliersReservation.isEmpty() || !LDBuffer.isEmpty() ||
+                !STBuffer.isEmpty() || !memoryUnit.isEmpty()) {
+            clock++;
+
+            executeInstruction(FPAdders);
+            executeInstruction(FPMultipliers);
+            executeInstruction(memoryUnit);
+
+            if (!instructions.isEmpty()) popAndMoveInstruction();
+
+            moveInstructionToExecutionUnit(FPAddersReservation, FPAdders);
+            moveInstructionToExecutionUnit(FPMultipliersReservation, FPMultipliers);
+            moveInstructionToExecutionUnit(LDBuffer, memoryUnit);
+            moveInstructionToExecutionUnit(STBuffer, memoryUnit);
+
+            print();
+        }
+    }
+
+    private <T> void executeInstruction(Queue<T> queue) {
         List<Instruction> toRemove = new ArrayList<>();
 
         for (T instruction : queue) {
@@ -61,7 +112,7 @@ class Tomasulo {
         }
     }
 
-    private <T> void moveToExecutionUnit(Queue<T> buffer, Queue<T> executionUnit) { 
+    private <T> void moveInstructionToExecutionUnit(Queue<T> buffer, Queue<T> executionUnit) {
         List<Instruction> toRemove = new ArrayList<>();
 
         for (T instruction : buffer) {
@@ -76,51 +127,13 @@ class Tomasulo {
         }
     }
 
-    public void execute() {
-        populateInstructions();
+    private void popAndMoveInstruction() {
+        Instruction instruction = instructions.remove();
+        boolean toBuffer = instruction.anySrcRegEmpty() || instruction.anyRegBusy();
 
-        while (!instructions.isEmpty() || !FPAdders.isEmpty() ||
-                !FPAddersReservation.isEmpty() || !FPMultipliers.isEmpty() ||
-                !FPMultipliersReservation.isEmpty() || !LDBuffer.isEmpty() ||
-                !STBuffer.isEmpty() || !memoryUnit.isEmpty()) {
-            clock++;
-
-            executeAndRemove(FPAdders);
-            executeAndRemove(FPMultipliers);
-            executeAndRemove(memoryUnit);
-
-            if (!instructions.isEmpty()) {
-                Instruction instruction = instructions.remove();
-                if (instruction.anySrcRegEmpty() || instruction.anyRegBusy()) {
-                    if (instruction.getOp().equals("ADD") || instruction.getOp().equals("SUB")) {
-                        FPAddersReservation.add((RInstruction) instruction);
-                    } else if (instruction.getOp().equals("MUL") || instruction.getOp().equals("DIV")) {
-                        FPMultipliersReservation.add((RInstruction) instruction);
-                    } else if (instruction.getOp().equals("LOAD")) {
-                        LDBuffer.add((LDSTInstruction) instruction);
-                    } else if (instruction.getOp().equals("STORE")) {
-                        STBuffer.add((LDSTInstruction) instruction);
-                    }
-                } else {
-                    if (instruction.getOp().equals("ADD") || instruction.getOp().equals("SUB")) {
-                        FPAdders.add((RInstruction) instruction);
-                    } else if (instruction.getOp().equals("MUL") || instruction.getOp().equals("DIV")) {
-                        FPMultipliers.add((RInstruction) instruction);
-                    } else if (instruction.getOp().equals("LOAD") || instruction.getOp().equals("STORE") ) {
-                        memoryUnit.add((LDSTInstruction) instruction);
-                    }
-                }
-
-                instruction.setRdBusy(true);
-            }
-
-            moveToExecutionUnit(FPAddersReservation, FPAdders);
-            moveToExecutionUnit(FPMultipliersReservation, FPMultipliers);
-            moveToExecutionUnit(LDBuffer, memoryUnit);
-            moveToExecutionUnit(STBuffer, memoryUnit);
-
-            print();
-        }
+        Queue<Instruction> queueSrc = locateInstruction.get(instruction.getOp()).get(toBuffer);
+        queueSrc.add(instruction);
+        instruction.setRdBusy(true);
     }
 
     private void print() {
