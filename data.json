@@ -47,7 +47,7 @@
           "name":"F11"
        }
     ],
-    "clocksPerOperation":[
+    "clocksPerInstruction":[
        {
           "op":"ADD",
           "value":1

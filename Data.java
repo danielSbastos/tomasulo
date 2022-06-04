@@ -20,7 +20,7 @@ public class Data {
             JSONParser parser = new JSONParser();
             JSONObject config = (JSONObject) parser.parse(new FileReader("./data.json"));
             JSONArray registersJson = (JSONArray) config.get("registers");
-            JSONArray clocksPerOperationJson = (JSONArray) config.get("clocksPerOperation");
+            JSONArray clocksPerOperationJson = (JSONArray) config.get("clocksPerInstruction");
             JSONArray instructionsJson = (JSONArray) config.get("instructions");
 
             for (Object register : registersJson) {
