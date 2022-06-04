@@ -1,5 +1,7 @@
 # Tomasulo's Algorithm
 
+Group members: [@danielSbastos](https://github.com/danielSbastos), [@rossanaoliveirasouza](https://github.com/rossanaoliveirasouza), [@isabelaaaguilar](https://github.com/isabelaaaguilar) and [@Kronomant](https://github.com/Kronomant).
+
 Software implementation of Tomasulo's algorithm, which is defined as:
 
 > computer architecture hardware algorithm for dynamic scheduling of instructions that allows out-of-order execution and enables more efficient use of multiple execution units. - [Wikipedia](https://en.wikipedia.org/wiki/Tomasulo_algorithm)
