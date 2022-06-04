@@ -14,7 +14,7 @@ public class Data {
     public static HashMap<String, Integer> clockPerInstruction = new HashMap<>();
     public static HashMap<String, Register> registers = new HashMap<>();
     public static Queue<IInstruction> instructions = new LinkedList<>();
-    
+
     public static void loadFile() {
         try {
             JSONParser parser = new JSONParser();

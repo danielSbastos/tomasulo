@@ -1,9 +1,11 @@
+import java.security.KeyStore.Entry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
@@ -149,19 +151,11 @@ class Tomasulo {
     }
 
     private void printRegisters(String str) {
-        System.out.println(
-            "Registers " + str + ": F0: " + Data.registers.get("F0") + 
-            " | F1: " + Data.registers.get("F1") +
-            " | F2: " + Data.registers.get("F2") +
-            " | F3: " + Data.registers.get("F3") +
-            " | F4: " + Data.registers.get("F4") +
-            " | F5: " + Data.registers.get("F5") +
-            " | F6: " + Data.registers.get("F6") +
-            " | F7: " + Data.registers.get("F7") +
-            " | F8: " + Data.registers.get("F8") +
-            " | F9: " + Data.registers.get("F9") +
-            " | F10: " + Data.registers.get("F10") +
-            " | F11: " + Data.registers.get("F11")
-        );
+        String out = "Registers " + str + ":";
+
+        for (Map.Entry<String, Register> reg : Data.registers.entrySet()) {
+            out += " | " + reg.getKey() + ": " + reg.getValue();
+        }
+        System.out.println(out);
     }
 }
