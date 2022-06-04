@@ -30,4 +30,4 @@ public class RInstruction extends Instruction implements IInstruction {
                " | rs1 = " + rs1 + " | rs2 = " +
                rs2 + " | clock = " + Integer.toString(super.remainingClock) + " ]";
     }
-}   
+}
