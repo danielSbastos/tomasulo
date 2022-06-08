@@ -5,7 +5,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 
 public class Main {
     public static void main(String[] args) {
@@ -102,7 +101,7 @@ class Tomasulo {
         List<IInstruction> toRemove = new ArrayList<>();
 
         for (T instruction : buffer) {
-            if (((IInstruction) instruction).noneSrcRegsEmpty()) {
+            if (((IInstruction) instruction).allRegsAvailable()) {
                 executionUnit.add(instruction);
                 toRemove.add(((IInstruction) instruction));
             }

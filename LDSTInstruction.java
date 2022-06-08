@@ -24,7 +24,7 @@ public class LDSTInstruction extends Instruction implements IInstruction {
 	    return rs.isBusy() || super.rd.isBusy();
     }
 
-    public boolean noneSrcRegsEmpty() { 
+    public boolean allRegsAvailable() {
         return !rs.isEmpty();
     }
 
