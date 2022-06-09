@@ -1,7 +1,7 @@
 public interface IInstruction {
     public boolean anySrcRegEmpty();
     public boolean anyRegBusy();
-    public boolean allRegsAvailable();
+    public boolean allSrcRegsAvailable();
     public String getOp();
     public void setRdBusy(boolean value);
     public void decrementClock();

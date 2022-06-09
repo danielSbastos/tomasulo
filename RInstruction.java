@@ -16,8 +16,8 @@ public class RInstruction extends Instruction implements IInstruction {
         return super.rd.isBusy() || this.rs1.isBusy() || this.rs2.isBusy();
     }
 
-    public boolean allRegsAvailable() {
-        return !rs1.isEmpty() && !rs2.isEmpty();
+    public boolean allSrcRegsAvailable() {
+        return !rs1.isBusy() && !rs2.isBusy();
     }
 
     public boolean anySrcRegEmpty() {

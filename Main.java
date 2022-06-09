@@ -101,7 +101,7 @@ class Tomasulo {
         List<IInstruction> toRemove = new ArrayList<>();
 
         for (T instruction : buffer) {
-            if (((IInstruction) instruction).allRegsAvailable()) {
+            if (((IInstruction) instruction).allSrcRegsAvailable()) {
                 executionUnit.add(instruction);
                 toRemove.add(((IInstruction) instruction));
             }
